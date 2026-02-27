@@ -1,0 +1,13 @@
+name: Deprecated CI — use Jenkinsfile
+
+on: []
+
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - name: No-op (workflow deprecated)
+        run: |
+          echo "This GitHub Actions workflow has been deprecated. CI has been moved to Jenkins."
+          echo "See Jenkinsfile in the repository root for the pipeline configuration."
+
