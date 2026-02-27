@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body { @apply bg-gray-50 text-gray-900 antialiased; }
+}
+
+@layer components {
+  .btn-primary   { @apply bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn-secondary { @apply bg-white text-gray-700 px-4 py-2 rounded-lg font-medium border border-gray-300 hover:bg-gray-50 transition-colors; }
+  .btn-danger    { @apply bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors; }
+  .btn-success   { @apply bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors; }
+  .btn-warning   { @apply bg-yellow-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-yellow-600 transition-colors; }
+  .card          { @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6; }
+  .input         { @apply w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all; }
+  .badge-present { @apply inline-flex px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full; }
+  .badge-late    { @apply inline-flex px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full; }
+  .badge-absent  { @apply inline-flex px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full; }
+  .badge-leave   { @apply inline-flex px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 rounded-full; }
+  .badge-pending  { @apply inline-flex px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full; }
+  .badge-approved { @apply inline-flex px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full; }
+  .badge-rejected { @apply inline-flex px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full; }
+}

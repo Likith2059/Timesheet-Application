@@ -1,0 +1,148 @@
+name: CI/CD — TimesheetPro
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY:       ghcr.io
+  BACKEND_IMAGE:  ${{ github.repository_owner }}/timesheet-backend
+  FRONTEND_IMAGE: ${{ github.repository_owner }}/timesheet-frontend
+
+jobs:
+  # ── Test Backend ──────────────────────────────────────────────
+  test-backend:
+    name: 🧪 Test Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: node --check src/server.js
+
+  # ── Build Frontend ────────────────────────────────────────────
+  test-frontend:
+    name: 🎨 Build Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+  # ── Build & Push Images ───────────────────────────────────────
+  docker-build:
+    name: 🐳 Build & Push
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend]
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Backend
+      - name: Backend metadata
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}
+          tags: |
+            type=sha,prefix=sha-
+            latest
+
+      - name: Build & push backend
+        uses: docker/build-push-action@v5
+        with:
+          context:    ./backend
+          push:       true
+          tags:       ${{ steps.meta-backend.outputs.tags }}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+
+      # Frontend
+      - name: Frontend metadata
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}
+          tags: |
+            type=sha,prefix=sha-
+            latest
+
+      - name: Build & push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context:    ./frontend
+          push:       true
+          tags:       ${{ steps.meta-frontend.outputs.tags }}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+
+  # ── Deploy to K8s ─────────────────────────────────────────────
+  deploy:
+    name: 🚀 Deploy to K8s
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Update image tags
+        run: |
+          cd k8s/overlays/prod
+          kustomize edit set image \
+            youruser/timesheet-backend=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:sha-${{ github.sha }}
+          kustomize edit set image \
+            youruser/timesheet-frontend=${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:sha-${{ github.sha }}
+
+      - name: Apply manifests
+        run: kubectl apply -k k8s/overlays/prod
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/backend  -n timesheet --timeout=300s
+          kubectl rollout status deployment/frontend -n timesheet --timeout=300s
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          kubectl rollout undo deployment/backend  -n timesheet
+          kubectl rollout undo deployment/frontend -n timesheet
