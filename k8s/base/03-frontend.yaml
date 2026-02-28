@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: likithsaib/timesheet-frontend:22
+          image: likithsaib/timesheet-frontend:23
           imagePullPolicy: Always
           ports:
             - containerPort: 80
