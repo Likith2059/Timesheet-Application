@@ -47,7 +47,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: youruser/timesheet-backend:1.0.0
+          image: likithsaib/timesheet-backend
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
