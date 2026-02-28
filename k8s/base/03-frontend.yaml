@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: youruser/timesheet-frontend:1.0.0
+          image: likithsaib/timesheet-backend
           imagePullPolicy: Always
           ports:
             - containerPort: 80
